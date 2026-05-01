@@ -21,7 +21,7 @@ function reactAdapt(Promise $promise)
 {
     $deferred = new Deferred();
 
-    $promise->onResolve(function ($error = null, $result = null) use ($deferred) {
+    $promise->onResolve(function ($error = null, $result = null) use ($deferred): void {
         if ($error) {
             $deferred->reject($error);
         } else {

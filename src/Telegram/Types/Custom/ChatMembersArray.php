@@ -13,7 +13,7 @@ use unreal4u\TelegramAPI\Telegram\Types\ChatMember;
  */
 class ChatMembersArray extends TraversableCustomType
 {
-    public function __construct(array $data = null, LoggerInterface $logger = null)
+    public function __construct(?array $data = null, ?LoggerInterface $logger = null)
     {
         foreach ($data ?? [] as $id => $chatMember) {
             $this->data[$id] = ChatMember::create($chatMember, $logger);

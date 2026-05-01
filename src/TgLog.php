@@ -58,7 +58,7 @@ class TgLog
      * @param RequestHandlerInterface $handler
      * @param LoggerInterface $logger
      */
-    public function __construct(string $botToken, RequestHandlerInterface $handler, LoggerInterface $logger = null)
+    public function __construct(string $botToken, RequestHandlerInterface $handler, ?LoggerInterface $logger = null)
     {
         $this->botToken = $botToken;
 
@@ -89,7 +89,7 @@ class TgLog
         return $this->sendRequestToTelegram($method, $option)
             ->then(function (TelegramResponse $response) use ($method) {
                 return $method::bindToObject($response, $this->logger);
-            }, function ($error) {
+            }, function ($error): void {
                 $this->logger->error($error);
                 throw $error;
             });

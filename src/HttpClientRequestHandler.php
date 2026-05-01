@@ -91,7 +91,7 @@ class HttpClientRequestHandler implements RequestHandlerInterface
                 );
             },
             // Promise rejected
-            static function (Exception $e) {
+            static function (Exception $e): void {
                 if ($e instanceof ResponseException) {
                     throw ClientException::fromResponseException($e);
                 }
