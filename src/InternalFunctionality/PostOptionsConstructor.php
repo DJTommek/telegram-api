@@ -7,14 +7,14 @@ namespace unreal4u\TelegramAPI\InternalFunctionality;
 use MultipartBuilder\Builder;
 use MultipartBuilder\MultipartData;
 use Psr\Log\LoggerInterface;
-use function strstr;
-use unreal4u\Dummy\Logger;
 use unreal4u\TelegramAPI\Abstracts\TelegramMethods;
+use unreal4u\TelegramAPI\DummyLogger;
 use unreal4u\TelegramAPI\Exceptions\MissingMandatoryField;
 use unreal4u\TelegramAPI\Telegram\Types\Custom\InputFile;
 use function pathinfo;
 use function stream_get_contents;
 use function strlen;
+use function strstr;
 use const PATHINFO_BASENAME;
 
 class PostOptionsConstructor
@@ -36,17 +36,9 @@ class PostOptionsConstructor
      */
     private $numberOfLocalFiles = 0;
 
-    /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-
-    public function __construct(?LoggerInterface $logger = null)
+    public function __construct(private ?LoggerInterface $logger = null)
     {
-        if ($logger === null) {
-            $logger = new Logger();
-        }
-        $this->logger = $logger;
+        $this->logger = $logger ?? new DummyLogger();
     }
 
     /**

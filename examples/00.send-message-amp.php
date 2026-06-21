@@ -4,13 +4,11 @@ declare(strict_types = 1);
 
 include __DIR__.'/basics.php';
 
-use Monolog\Handler\StreamHandler;
-use Monolog\Logger;
-use \unreal4u\TelegramAPI\TgLog;
-use \unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
+use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
+use unreal4u\TelegramAPI\TgLog;
 
 \Amp\Loop::run(function () {
-    $logger = (new \Monolog\Logger("log"))->pushHandler(new StreamHandler(STDOUT, Logger::ERROR));
+    $logger = new \unreal4u\TelegramAPI\ConsoleLogger();
     $tgLog = new TgLog(BOT_TOKEN, new \unreal4u\TelegramAPI\HttpClientRequestHandlerAmp(), $logger);
 
     $sendMessage = new SendMessage();

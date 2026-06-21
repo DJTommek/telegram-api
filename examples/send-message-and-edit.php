@@ -6,15 +6,12 @@ include __DIR__.'/basics.php';
 
 use React\EventLoop\Factory;
 use unreal4u\TelegramAPI\HttpClientRequestHandler;
-use Monolog\Handler\StreamHandler;
-use Monolog\Logger;
 use unreal4u\TelegramAPI\Telegram\Methods\EditMessageText;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
 use unreal4u\TelegramAPI\Telegram\Types\Message;
 use unreal4u\TelegramAPI\TgLog;
 
-$logger = new Logger('CUSTOM-EXAMPLE');
-$logger->pushHandler(new StreamHandler('logs/custom-example.log'));
+$logger = new \unreal4u\TelegramAPI\ConsoleLogger();
 
 $loop = Factory::create();
 $tgLog = new TgLog(BOT_TOKEN, new HttpClientRequestHandler($loop), $logger);

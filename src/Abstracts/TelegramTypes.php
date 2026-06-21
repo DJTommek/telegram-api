@@ -5,24 +5,19 @@ declare(strict_types = 1);
 namespace unreal4u\TelegramAPI\Abstracts;
 
 use Psr\Log\LoggerInterface;
-use unreal4u\Dummy\Logger;
+use unreal4u\TelegramAPI\DummyLogger;
 use unreal4u\TelegramAPI\Telegram\Types\Custom\ResultArray;
 
 #[\AllowDynamicProperties]
 abstract class TelegramTypes
 {
-    /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-
-    public function __construct(?array $data = null, ?LoggerInterface $logger = null)
+    public function __construct(
+        ?array $data = null,
+        protected ?LoggerInterface $logger = null,
+    )
     {
-        if ($logger === null) {
-            $logger = new Logger();
-        }
+        $this->logger = $logger ?? new DummyLogger();
 
-        $this->logger = $logger;
         if ($data !== null) {
             $this->populateObject($data);
         }

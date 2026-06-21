@@ -6,7 +6,6 @@ namespace unreal4u\TelegramAPI;
 
 use Psr\Log\LoggerInterface;
 use React\Promise\PromiseInterface;
-use unreal4u\Dummy\Logger;
 use unreal4u\TelegramAPI\Abstracts\TelegramMethods;
 use unreal4u\TelegramAPI\InternalFunctionality\PostOptionsConstructor;
 use unreal4u\TelegramAPI\InternalFunctionality\TelegramDocument;
@@ -18,10 +17,7 @@ use unreal4u\TelegramAPI\Telegram\Types\File;
  */
 class TgLog
 {
-    /**
-     * @var RequestHandlerInterface
-     */
-    protected $requestHandler;
+    protected RequestHandlerInterface $requestHandler;
 
     /**
      * @var PostOptionsConstructor
@@ -29,22 +25,9 @@ class TgLog
     protected $formConstructor;
 
     /**
-     * Stores the token
-     * @var string
-     */
-    private $botToken;
-
-    /**
-     * Contains an instance to a PSR-3 compatible logger
-     * @var LoggerInterface
-     */
-    protected $logger;
-
-    /**
      * Stores the API URL from Telegram
-     * @var string
      */
-    private $apiUrl;
+    private string $apiUrl;
 
     /**
      * @var string
@@ -53,20 +36,14 @@ class TgLog
 
     /**
      * TelegramLog constructor.
-     *
-     * @param string $botToken
-     * @param RequestHandlerInterface $handler
-     * @param LoggerInterface $logger
      */
-    public function __construct(string $botToken, RequestHandlerInterface $handler, ?LoggerInterface $logger = null)
+    public function __construct(
+        private string $botToken,
+        RequestHandlerInterface $handler,
+        private ?LoggerInterface $logger = null,
+    )
     {
-        $this->botToken = $botToken;
-
-        // Initialize new dummy logger (PSR-3 compatible) if not injected
-        if ($logger === null) {
-            $logger = new Logger();
-        }
-        $this->logger = $logger;
+        $this->logger = $logger ?? new DummyLogger();
 
         $this->requestHandler = $handler;
         $this->formConstructor = new PostOptionsConstructor();
