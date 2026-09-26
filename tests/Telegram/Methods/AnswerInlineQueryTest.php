@@ -52,16 +52,15 @@ class AnswerInlineQueryTest extends TestCase
         $answerInlineQuery->inline_query_id = 123412341234;
         $answerInlineQuery->addResult($inlineQueryResultArticle);
 
-        $promise = $this->tgLog->performApiRequest($answerInlineQuery);
+        $message = $this->tgLog->performApiRequest($answerInlineQuery);
 
         $this->assertJsonStringEqualsJsonFile(
             'tests/Mock/MockData/AnswerInlineQueryArticle_unit-test-001.json',
             $answerInlineQuery->getResults()
         );
 
-        $promise->then(function (ResultBoolean $message) {
-            $this->assertInstanceOf(ResultBoolean::class, $message->data);
-            $this->assertSame('1', $message);
-        });
+        $this->assertInstanceOf(ResultBoolean::class, $message);
+        $this->assertTrue($message->data);
+        $this->assertSame('1', (string)$message);
     }
 }

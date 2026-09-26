@@ -40,23 +40,21 @@ class SendMessageTest extends TestCase
         $sendMessage->chat_id = 12341234;
         $sendMessage->text = 'Hello world';
 
-        $promise = $this->tgLog->performApiRequest($sendMessage);
+        $result = $this->tgLog->performApiRequest($sendMessage);
 
-        $promise->then(function (Message $result) use ($sendMessage) {
-            $this->assertInstanceOf(Message::class, $result);
-            $this->assertEquals(14, $result->message_id);
-            $this->assertInstanceOf(User::class, $result->from);
-            $this->assertInstanceOf(Chat::class, $result->chat);
-            $this->assertEquals(123456789, $result->from->id);
-            $this->assertEquals('unreal4uBot', $result->from->username);
-            $this->assertEquals($sendMessage->chat_id, $result->chat->id);
-            $this->assertEquals('unreal4u', $result->chat->username);
+        $this->assertInstanceOf(Message::class, $result);
+        $this->assertEquals(14, $result->message_id);
+        $this->assertInstanceOf(User::class, $result->from);
+        $this->assertInstanceOf(Chat::class, $result->chat);
+        $this->assertEquals(123456789, $result->from->id);
+        $this->assertEquals('unreal4uBot', $result->from->username);
+        $this->assertEquals($sendMessage->chat_id, $result->chat->id);
+        $this->assertEquals('unreal4u', $result->chat->username);
 
-            $this->assertEquals(1452254253, $result->date);
-            $this->assertNull($result->audio);
+        $this->assertEquals(1452254253, $result->date);
+        $this->assertNull($result->audio);
 
-            $this->assertEquals($sendMessage->text, $result->text);
-        });
+        $this->assertEquals($sendMessage->text, $result->text);
     }
 
     /**
@@ -78,23 +76,21 @@ class SendMessageTest extends TestCase
             json_encode($sendMessage->reply_markup)
         );
 
-        $promise = $this->tgLog->performApiRequest($sendMessage);
+        $result = $this->tgLog->performApiRequest($sendMessage);
 
-        $promise->then(function (Message $result) use ($sendMessage) {
-            $this->assertInstanceOf(Message::class, $result);
-            $this->assertEquals(14, $result->message_id);
-            $this->assertInstanceOf(User::class, $result->from);
-            $this->assertInstanceOf(Chat::class, $result->chat);
-            $this->assertEquals(123456789, $result->from->id);
-            $this->assertEquals('unreal4uBot', $result->from->username);
-            $this->assertEquals($sendMessage->chat_id, $result->chat->id);
-            $this->assertEquals('unreal4u', $result->chat->username);
+        $this->assertInstanceOf(Message::class, $result);
+        $this->assertEquals(14, $result->message_id);
+        $this->assertInstanceOf(User::class, $result->from);
+        $this->assertInstanceOf(Chat::class, $result->chat);
+        $this->assertEquals(123456789, $result->from->id);
+        $this->assertEquals('unreal4uBot', $result->from->username);
+        $this->assertEquals($sendMessage->chat_id, $result->chat->id);
+        $this->assertEquals('unreal4u', $result->chat->username);
 
-            $this->assertEquals(1452254253, $result->date);
-            $this->assertNull($result->audio);
+        $this->assertEquals(1452254253, $result->date);
+        $this->assertNull($result->audio);
 
-            $this->assertEquals($sendMessage->text, $result->text);
-        });
+        $this->assertEquals($sendMessage->text, $result->text);
     }
 
     public function testSendMessageChatNotFound()

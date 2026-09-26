@@ -41,26 +41,24 @@ class SendVideoTest extends TestCase
         $sendVideo->video = new InputFile('examples/binary-test-data/demo-video.mp4');
         $sendVideo->caption = 'Example of a video file sent with Telegram';
 
-        $promise = $this->tgLog->performApiRequest($sendVideo);
+        $result = $this->tgLog->performApiRequest($sendVideo);
 
-        $promise->then(function (Message $result) use ($sendVideo) {
-            $this->assertInstanceOf(Message::class, $result);
-            $this->assertEquals(20, $result->message_id);
-            $this->assertInstanceOf(User::class, $result->from);
-            $this->assertInstanceOf(Chat::class, $result->chat);
-            $this->assertEquals(12345678, $result->from->id);
-            $this->assertEquals('unreal4uBot', $result->from->username);
-            $this->assertEquals($sendVideo->chat_id, $result->chat->id);
-            $this->assertEquals('unreal4u', $result->chat->username);
+        $this->assertInstanceOf(Message::class, $result);
+        $this->assertEquals(20, $result->message_id);
+        $this->assertInstanceOf(User::class, $result->from);
+        $this->assertInstanceOf(Chat::class, $result->chat);
+        $this->assertEquals(12345678, $result->from->id);
+        $this->assertEquals('unreal4uBot', $result->from->username);
+        $this->assertEquals($sendVideo->chat_id, $result->chat->id);
+        $this->assertEquals('unreal4u', $result->chat->username);
 
-            $this->assertEquals(1452641851, $result->date);
-            $this->assertNull($result->document);
-            $this->assertNull($result->voice);
-            $this->assertNull($result->audio);
+        $this->assertEquals(1452641851, $result->date);
+        $this->assertNull($result->document);
+        $this->assertNull($result->voice);
+        $this->assertNull($result->audio);
 
-            $this->assertInstanceOf(Video::class, $result->video);
-            $this->assertEquals('XXX-YYY-ZZZ-01', $result->video->file_id);
-            $this->assertEquals($sendVideo->caption, $result->caption);
-        });
+        $this->assertInstanceOf(Video::class, $result->video);
+        $this->assertEquals('XXX-YYY-ZZZ-01', $result->video->file_id);
+        $this->assertEquals($sendVideo->caption, $result->caption);
     }
 }

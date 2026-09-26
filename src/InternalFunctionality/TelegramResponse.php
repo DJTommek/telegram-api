@@ -44,9 +44,11 @@ class TelegramResponse
     public function fillRawData(string $rawData): TelegramResponse
     {
         $this->rawData = $rawData;
-        $this->decodedData = json_decode($this->rawData, true);
+        // Downloaded files are not JSON at all, so don't assume we always get an array back
+        $decodedData = json_decode($this->rawData, true);
+        $this->decodedData = \is_array($decodedData) ? $decodedData : [];
 
-        if ($this->decodedData['ok'] === false) {
+        if (($this->decodedData['ok'] ?? null) === false) {
             $exception = new ClientException();
             $exception->setError(new UnsuccessfulRequest($this->decodedData));
             throw $exception;
@@ -65,14 +67,14 @@ class TelegramResponse
      */
     public function getTypeOfResult(): string
     {
-        switch (gettype($this->decodedData['result'])) {
+        switch (gettype($this->decodedData['result'] ?? null)) {
             case 'array':
             case 'integer':
             case 'boolean':
-                return gettype($this->decodedData['result']);
+                return gettype($this->decodedData['result'] ?? null);
             default:
                 throw new InvalidResultType(
-                    sprintf('The passed data type ("%s") is not supported', gettype($this->decodedData['result']))
+                    sprintf('The passed data type ("%s") is not supported', gettype($this->decodedData['result'] ?? null))
                 );
         }
     }
@@ -84,7 +86,7 @@ class TelegramResponse
      */
     public function getResult(): array
     {
-        return (array)$this->decodedData['result'];
+        return (array)($this->decodedData['result'] ?? null);
     }
 
     /**
@@ -94,7 +96,7 @@ class TelegramResponse
      */
     public function getResultBoolean(): bool
     {
-        return (bool)$this->decodedData['result'];
+        return (bool)($this->decodedData['result'] ?? null);
     }
 
     /**
@@ -103,7 +105,7 @@ class TelegramResponse
      */
     public function getResultInt(): int
     {
-        return (int)$this->decodedData['result'];
+        return (int)($this->decodedData['result'] ?? null);
     }
 
     /**
@@ -113,7 +115,7 @@ class TelegramResponse
      */
     public function getResultString(): string
     {
-        return (string)$this->decodedData['result'];
+        return (string)($this->decodedData['result'] ?? null);
     }
 
     /**

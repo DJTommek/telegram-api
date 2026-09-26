@@ -19,7 +19,8 @@ the need, feel free to let me know.
 
 * Enables you to anything supported by the Telegram Bot API: messages, stickers, location, inline bots and any other supported method via PHP to a Telegram user (either direct conversation, channel, group or supergroup).
 * Respects and implements the default types and methods made by Telegram itself. Have any doubts about any method? [Just check the original documentation](https://core.telegram.org/bots/api), this implementation will not differ too much.
-* Doesn't need any mandatory dependencies, except for ReactPHP, which you can inject if you already use it elsewhere.
+* Doesn't depend on any specific HTTP client: bring any [PSR-18](https://www.php-fig.org/psr/psr-18/) client together with
+  [PSR-17](https://www.php-fig.org/psr/psr-17/) factories (Guzzle, Symfony HttpClient, ...).
 * **Full** inline bots support.
 * **Full** support for payment system.
 
@@ -59,25 +60,35 @@ The preferred (and only for now) installation method is Composer, so add the fol
 
 If you are not familiar with it, I suggest reading the basic usage manual [located here](https://getcomposer.org/doc/01-basic-usage.md).
 
-### Tip for Russian users
+### Choosing an HTTP client
 
-In order to use a proxy, you can use the https://github.com/clue/php-socks-react package and pass on the following options to the Client:
+This package only depends on the PSR HTTP interfaces, so you'll need to install an implementation yourself. For example,
+[Guzzle](https://docs.guzzlephp.org) provides both the PSR-18 client and the PSR-17 factories:
+
+```bash
+composer require guzzlehttp/guzzle
+```
+
+### Using a proxy
+
+Proxies, timeouts and any other transport settings are configured on the HTTP client itself. With Guzzle:
 
 ```php
 <?php
 
-use Clue\React\Socks\Client;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\HttpFactory;
+use unreal4u\TelegramAPI\PsrHttpClientRequestHandler;
+use unreal4u\TelegramAPI\TgLog;
 
-$loop = Factory::create();
 // Replace PROXY_ADDRESS and PROXY_PORT with the correct configuration
-$proxy = new Client('socks5://' . PROXY_ADDRESS . ':' . PROXY_PORT, new Connector($loop));
-$handler = new HttpClientRequestHandler($loop, [
-    'tcp' => $proxy,
+$client = new Client([
+    'proxy' => 'socks5://' . PROXY_ADDRESS . ':' . PROXY_PORT,
     'timeout' => 3.0,
-    'dns' => false
 ]);
+$httpFactory = new HttpFactory();
 
-$this->tgLog = new TgLog(BOT_TOKEN, $handler);
+$tgLog = new TgLog(BOT_TOKEN, new PsrHttpClientRequestHandler($client, $httpFactory, $httpFactory));
 // The rest is exactly the same as it normally is, see the examples folder for more information
 ```
 
@@ -100,28 +111,63 @@ have to upgrade from v2 to v3.
 ```php
 <?php
 
-use \unreal4u\TelegramAPI\HttpClientRequestHandler;
-use \unreal4u\TelegramAPI\TgLog;
-use \unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
+include 'vendor/autoload.php';
 
-$loop = \React\EventLoop\Factory::create();
-$handler = new HttpClientRequestHandler($loop);
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\HttpFactory;
+use unreal4u\TelegramAPI\PsrHttpClientRequestHandler;
+use unreal4u\TelegramAPI\TgLog;
+use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
+
+$httpFactory = new HttpFactory();
+$handler = new PsrHttpClientRequestHandler(new Client(), $httpFactory, $httpFactory);
 $tgLog = new TgLog(BOT_TOKEN, $handler);
 
 $sendMessage = new SendMessage();
 $sendMessage->chat_id = A_USER_CHAT_ID;
 $sendMessage->text = 'Hello world!';
 
-$tgLog->performApiRequest($sendMessage);
-$loop->run();
+$message = $tgLog->performApiRequest($sendMessage);
 ```
-(Side note: In case `React\EventLoop\Factory` cannot be resolved in the above code, add `include('vendor/autoload.php')` to your PHP file).
 
 With the `SendMessage()` object, you can create a message to be sent through the TgLog object.  
 All other functionality is based upon this behaviour, so every other method is very similar: you instantiate an object, 
-pass that object to TelegramLog->performApiRequest(), which will return a Promise. If the method returns a reply, 
-pass a callback to its `onFulfilled` parameter and you'll get the native Telegram response back as an object. 
-Different methods return different object types. 
+pass that object to `TgLog->performApiRequest()` and you'll get the native Telegram response back as an object.
+Different methods return different object types. When the request fails (either because of a network issue or because
+Telegram rejected it), a `unreal4u\TelegramAPI\Exceptions\ClientException` is thrown; `ClientException::getError()` 
+contains the error as described by Telegram.
+
+### Asynchronous requests
+
+PSR-18 clients are blocking, but since PHP 8.1 a fiber-aware client can run several requests concurrently: it only
+suspends the fiber it was called from. With [amphp/http-client](https://github.com/amphp/http-client) 
+(`composer require amphp/http-client-psr7`) this looks like:
+
+```php
+<?php
+
+use Amp\Http\Client\HttpClientBuilder;
+use Amp\Http\Client\Psr7\PsrAdapter;
+use Amp\Http\Client\Psr7\PsrHttpClient;
+use GuzzleHttp\Psr7\HttpFactory;
+use unreal4u\TelegramAPI\PsrHttpClientRequestHandler;
+use unreal4u\TelegramAPI\TgLog;
+use function Amp\async;
+use function Amp\Future\await;
+
+$httpFactory = new HttpFactory();
+$client = new PsrHttpClient(HttpClientBuilder::buildDefault(), new PsrAdapter($httpFactory, $httpFactory));
+$tgLog = new TgLog(BOT_TOKEN, new PsrHttpClientRequestHandler($client, $httpFactory, $httpFactory));
+
+// Both requests are sent at the same time, await() returns once both are done
+[$firstMessage, $secondMessage] = await([
+    async(fn() => $tgLog->performApiRequest($firstSendDocument)),
+    async(fn() => $tgLog->performApiRequest($secondSendDocument)),
+]);
+```
+
+See `async-send-files.php` and `async-download-files.php` in the examples directory for complete examples, including
+the timeouts and size limits you'll want to raise for bigger files.
 
 Please refer to the [examples directory](https://github.com/unreal4u/telegram-api/tree/master/examples) to view examples 
 of some of the implemented methods, including inline bots. 

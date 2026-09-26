@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 include __DIR__ . '/basics.php';
 
-use React\EventLoop\Factory;
-use unreal4u\TelegramAPI\HttpClientRequestHandler;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\HttpFactory;
+use unreal4u\TelegramAPI\PsrHttpClientRequestHandler;
 use unreal4u\TelegramAPI\Telegram\Methods\SendContact;
 use unreal4u\TelegramAPI\TgLog;
 
-$loop = Factory::create();
-$tgLog = new TgLog(BOT_TOKEN, new HttpClientRequestHandler($loop));
+$httpFactory = new HttpFactory();
+$tgLog = new TgLog(BOT_TOKEN, new PsrHttpClientRequestHandler(new Client(), $httpFactory, $httpFactory));
 
 $sendInvoice = new SendContact();
 $sendInvoice->chat_id = A_USER_CHAT_ID;
@@ -22,18 +23,12 @@ VERSION:3.0
 EMAIL;TYPE=INTERNET:foo@example.com
 END:VCARD';
 
-$promise = $tgLog->performApiRequest($sendInvoice);
-
-$promise->then(
-    function ($response) {
-        echo '<pre>';
-        var_dump($response);
-        echo '</pre>';
-    },
-    function (\Exception $exception) {
-        // Onoes, an exception occurred...
-        echo 'Exception ' . get_class($exception) . ' caught, message: ' . $exception->getMessage();
-    }
-);
-
-$loop->run();
+try {
+    $response = $tgLog->performApiRequest($sendInvoice);
+    echo '<pre>';
+    var_dump($response);
+    echo '</pre>';
+} catch (\Exception $exception) {
+    // Onoes, an exception occurred...
+    echo 'Exception ' . get_class($exception) . ' caught, message: ' . $exception->getMessage();
+}

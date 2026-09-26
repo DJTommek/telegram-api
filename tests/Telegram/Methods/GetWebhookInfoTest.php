@@ -34,14 +34,12 @@ class GetWebhookInfoTest extends TestCase
     {
         $getWebhookInfo = new GetWebhookInfo();
 
-        $promise = $this->tgLog->performApiRequest($getWebhookInfo);
+        $result = $this->tgLog->performApiRequest($getWebhookInfo);
 
-        $promise->then(function (WebhookInfo $result) {
-            $this->assertInstanceOf(WebhookInfo::class, $result);
-            $this->assertSame('https://telegram.unreal4u.com/XXXYYYZZZ', $result->url);
-            $this->assertFalse($result->has_custom_certificate);
-            $this->assertEmpty($result->pending_update_count);
-        });
+        $this->assertInstanceOf(WebhookInfo::class, $result);
+        $this->assertSame('https://telegram.unreal4u.com/XXXYYYZZZ', $result->url);
+        $this->assertFalse($result->has_custom_certificate);
+        $this->assertEmpty($result->pending_update_count);
     }
 
     public function testGetWebhookInfoNotSet()
@@ -50,13 +48,11 @@ class GetWebhookInfoTest extends TestCase
 
         $getWebhookInfo = new GetWebhookInfo();
 
-        $promise = $this->tgLog->performApiRequest($getWebhookInfo);
+        $result = $this->tgLog->performApiRequest($getWebhookInfo);
 
-        $promise->then(function (WebhookInfo $result) {
-            $this->assertInstanceOf(WebhookInfo::class, $result);
-            $this->assertEmpty($result->url);
-            $this->assertFalse($result->has_custom_certificate);
-            $this->assertEmpty($result->pending_update_count);
-        });
+        $this->assertInstanceOf(WebhookInfo::class, $result);
+        $this->assertEmpty($result->url);
+        $this->assertFalse($result->has_custom_certificate);
+        $this->assertEmpty($result->pending_update_count);
     }
 }

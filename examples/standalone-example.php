@@ -4,28 +4,28 @@ declare(strict_types = 1);
 
 include __DIR__.'/basics.php';
 
-use React\EventLoop\Factory;
-use unreal4u\TelegramAPI\HttpClientRequestHandler;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\HttpFactory;
+use unreal4u\TelegramAPI\PsrHttpClientRequestHandler;
 use unreal4u\TelegramAPI\Telegram\Methods\GetMe;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
 use unreal4u\TelegramAPI\Telegram\Types\User;
 use unreal4u\TelegramAPI\TgLog;
 
-$loop = Factory::create();
-$tgLog = new TgLog(BOT_TOKEN, new HttpClientRequestHandler($loop));
+$httpFactory = new HttpFactory();
+$tgLog = new TgLog(BOT_TOKEN, new PsrHttpClientRequestHandler(new Client(), $httpFactory, $httpFactory));
 
 $getMe = new GetMe();
-$promise = $tgLog->performApiRequest($getMe);
+/** @var User $userInformation */
+$userInformation = $tgLog->performApiRequest($getMe);
 
-$promise->then(function (User $userInformation) {
-    printf(
-        'This bot is called <strong>%s</strong> (username %s) and has id <strong>%d</strong>%s',
-        $userInformation->first_name,
-        $userInformation->username,
-        $userInformation->id,
-        PHP_EOL
-    );
-});
+printf(
+    'This bot is called <strong>%s</strong> (username %s) and has id <strong>%d</strong>%s',
+    $userInformation->first_name,
+    $userInformation->username,
+    $userInformation->id,
+    PHP_EOL
+);
 
 $sendMessage = new SendMessage();
 $sendMessage->chat_id = A_USER_CHAT_ID;
@@ -36,5 +36,3 @@ $sendMessage = new SendMessage();
 $sendMessage->chat_id = A_GROUP_CHAT_ID;
 $sendMessage->text = 'And this is an hello the the group... from scratch :D';
 $tgLog->performApiRequest($sendMessage);
-
-$loop->run();

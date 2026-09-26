@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace unreal4u\TelegramAPI\InternalFunctionality;
 
-use MultipartBuilder\Builder;
-use MultipartBuilder\MultipartData;
 use Psr\Log\LoggerInterface;
 use unreal4u\TelegramAPI\Abstracts\TelegramMethods;
 use unreal4u\TelegramAPI\DummyLogger;
@@ -112,11 +110,11 @@ class PostOptionsConstructor
      */
     public function constructMultipartOptions(array $data, array $multipartData): array
     {
-        $builder = $this->constructBodyForMultipart($data, $multipartData);
-        $body = $builder->buildAll();
+        $boundary = bin2hex(random_bytes(16));
+        $body = $this->constructBodyForMultipart($boundary, $data, $multipartData);
         $completeRequest = [
             'headers' => [
-                'Content-Type' => 'multipart/form-data; boundary="' . $builder->getBoundary() . '"',
+                'Content-Type' => 'multipart/form-data; boundary="' . $boundary . '"',
                 'Content-Length' => strlen($body)
             ],
             'body' => $body
@@ -128,45 +126,79 @@ class PostOptionsConstructor
     /**
      * Is able to construct the entire body for a multipart form data
      *
+     * @see https://www.rfc-editor.org/rfc/rfc7578
+     *
+     * @param string $boundary
      * @param array $data
      * @param array $multipartData
-     * @return Builder
+     * @return string
      */
-    private function constructBodyForMultipart(array $data, array $multipartData): Builder
+    private function constructBodyForMultipart(string $boundary, array $data, array $multipartData): string
     {
-        $builder = new Builder();
         $this->logger->debug('Creating multi-part form array data (complex and expensive)');
+        $body = '';
 
         foreach ($data as $id => $value) {
             if (!$value instanceof InputFile) {
-                $appendingData = new MultipartData((string)$id, (string)$value);
-                $builder->append($appendingData);
+                $body .= $this->buildPart($boundary, (string)$id, (string)$value);
             }
         }
 
-        return $this->appendMediaStream($builder, $multipartData);
+        $body .= $this->appendMediaStream($boundary, $multipartData);
+
+        return $body . '--' . $boundary . "--\r\n";
     }
 
     /**
      * Scans the actual media and adds it to the multipart form data
      *
-     * @param Builder $builder
+     * @param string $boundary
      * @param array $multipartData
-     * @return Builder
+     * @return string
      */
-    private function appendMediaStream(Builder $builder, array $multipartData): Builder
+    private function appendMediaStream(string $boundary, array $multipartData): string
     {
+        $body = '';
         foreach ($multipartData as $identifier => $mediaStream) {
-            $appendingData = new MultipartData(
+            $body .= $this->buildPart(
+                $boundary,
                 strstr($identifier, '~', true),
                 stream_get_contents($mediaStream['stream']),
                 pathinfo($mediaStream['filename'], PATHINFO_BASENAME)
             );
             fclose($mediaStream['stream']);
-
-            $builder->append($appendingData);
         }
 
-        return $builder;
+        return $body;
+    }
+
+    /**
+     * Builds a single part of a multipart form, including its opening boundary
+     *
+     * @param string $boundary
+     * @param string $name
+     * @param string $contents
+     * @param string|null $filename When given, the part is sent as a file
+     * @return string
+     */
+    private function buildPart(string $boundary, string $name, string $contents, ?string $filename = null): string
+    {
+        $disposition = 'form-data; name="' . $this->escapeQuotedString($name) . '"';
+        $headers = '';
+        if ($filename !== null) {
+            $disposition .= '; filename="' . $this->escapeQuotedString($filename) . '"';
+            $headers = "Content-Type: application/octet-stream\r\n";
+        }
+
+        return '--' . $boundary . "\r\n"
+            . 'Content-Disposition: ' . $disposition . "\r\n"
+            . $headers
+            . "\r\n"
+            . $contents . "\r\n";
+    }
+
+    private function escapeQuotedString(string $value): string
+    {
+        return str_replace(['\\', '"', "\r", "\n"], ['\\\\', '\\"', ' ', ' '], $value);
     }
 }

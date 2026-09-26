@@ -36,13 +36,11 @@ class GetFileTest extends TestCase
         $getFile = new GetFile();
         $getFile->file_id = 'XXXYYYZZZ';
 
-        $promise = $this->tgLog->performApiRequest($getFile);
+        $result = $this->tgLog->performApiRequest($getFile);
 
-        $promise->then(function (File $result) {
-            $this->assertInstanceOf(File::class, $result);
-            $this->assertEquals('XXXYYYZZZ', $result->file_id);
-            $this->assertEquals('voice/file_8', $result->file_path);
-        });
+        $this->assertInstanceOf(File::class, $result);
+        $this->assertEquals('XXXYYYZZZ', $result->file_id);
+        $this->assertEquals('voice/file_8', $result->file_path);
     }
 
     public function testGetFileInvalidFileId()

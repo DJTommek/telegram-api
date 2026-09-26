@@ -60,6 +60,11 @@ abstract class TelegramMethods implements TelegramMethodDefinitions
             $this->reply_markup = json_encode($this->formatReplyMarkup($this->reply_markup));
         }
 
+        if (!empty($this->reply_parameters) && $this->reply_parameters instanceof TelegramTypes) {
+            // Only send filled in fields, defaults such as chat_id = 0 would otherwise be rejected by Telegram
+            $this->reply_parameters = json_encode($this->exportReplyMarkupItem($this->reply_parameters));
+        }
+
         return $this;
     }
 

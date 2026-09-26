@@ -4,14 +4,15 @@ declare(strict_types = 1);
 
 include __DIR__.'/basics.php';
 
-use React\EventLoop\Factory;
-use unreal4u\TelegramAPI\HttpClientRequestHandler;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\HttpFactory;
+use unreal4u\TelegramAPI\PsrHttpClientRequestHandler;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMessage;
 use unreal4u\TelegramAPI\Telegram\Types\Inline\Keyboard\Markup;
 use unreal4u\TelegramAPI\TgLog;
 
-$loop = Factory::create();
-$tgLog = new TgLog(BOT_TOKEN, new HttpClientRequestHandler($loop));
+$httpFactory = new HttpFactory();
+$tgLog = new TgLog(BOT_TOKEN, new PsrHttpClientRequestHandler(new Client(), $httpFactory, $httpFactory));
 
 $sendMessage = new SendMessage();
 $sendMessage->chat_id = A_USER_CHAT_ID;
@@ -48,7 +49,6 @@ $inlineKeyboard = new Markup([
     ]
 ]);
 
-
 // METHOD 2: in parts, working directly with the object
 /*
 $inlineKeyboard = new Markup();
@@ -73,18 +73,12 @@ $sendMessage->disable_web_page_preview = true;
 $sendMessage->parse_mode = 'Markdown';
 $sendMessage->reply_markup = $inlineKeyboard;
 
-$promise = $tgLog->performApiRequest($sendMessage);
-
-$promise->then(
-    function ($response) {
-        echo '<pre>';
-        var_dump($response);
-        echo '</pre>';
-    },
-    function (\Exception $exception) {
-        // Onoes, an exception occurred...
-        echo 'Exception ' . get_class($exception) . ' caught, message: ' . $exception->getMessage();
-    }
-);
-
-$loop->run();
+try {
+    $response = $tgLog->performApiRequest($sendMessage);
+    echo '<pre>';
+    var_dump($response);
+    echo '</pre>';
+} catch (\Exception $exception) {
+    // Onoes, an exception occurred...
+    echo 'Exception ' . get_class($exception) . ' caught, message: ' . $exception->getMessage();
+}

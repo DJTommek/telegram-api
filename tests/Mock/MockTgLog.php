@@ -3,8 +3,8 @@
 namespace unreal4u\TelegramAPI\tests\Mock;
 
 use Psr\Log\LoggerInterface;
-use React\Promise\PromiseInterface;
 use unreal4u\TelegramAPI\Abstracts\TelegramMethods;
+use unreal4u\TelegramAPI\InternalFunctionality\TelegramResponse;
 use unreal4u\TelegramAPI\TgLog;
 
 
@@ -22,13 +22,13 @@ class MockTgLog extends TgLog
      */
     public $mockException = false;
 
-    public function __construct($botToken, LoggerInterface $logger = null)
+    public function __construct($botToken, ?LoggerInterface $logger = null)
     {
         $handler = new MockRequestHandler();
         parent::__construct($botToken, $handler, $logger);
     }
 
-    protected function sendRequestToTelegram(TelegramMethods $method, array $formData): PromiseInterface
+    protected function sendRequestToTelegram(TelegramMethods $method, array $formData): TelegramResponse
     {
         $this->composeApiMethodUrl($method);
 

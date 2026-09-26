@@ -43,12 +43,10 @@ class SetWebhookTest extends TestCase
         $setWebhook = new SetWebhook();
         $setWebhook->url = 'https://example.com/';
 
-        $promise = $this->tgLog->performApiRequest($setWebhook);
+        $result = $this->tgLog->performApiRequest($setWebhook);
 
-        $promise->then(function (ResultBoolean $result) {
-            $this->assertInstanceOf(ResultBoolean::class, $result);
-            $this->assertTrue($result->data);
-        });
+        $this->assertInstanceOf(ResultBoolean::class, $result);
+        $this->assertTrue($result->data);
     }
 
     public function testUnsetWebhook()
@@ -58,11 +56,9 @@ class SetWebhookTest extends TestCase
         $setWebhook = new SetWebhook();
         $setWebhook->url = '';
 
-        $promise = $this->tgLog->performApiRequest($setWebhook);
+        $result = $this->tgLog->performApiRequest($setWebhook);
 
-        $promise->then(function (ResultBoolean $result) {
-            $this->assertInstanceOf(ResultBoolean::class, $result);
-            $this->assertTrue($result->data);
-        });
+        $this->assertInstanceOf(ResultBoolean::class, $result);
+        $this->assertTrue($result->data);
     }
 }

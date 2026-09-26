@@ -1,8 +1,8 @@
 <?php
 
 /*
- * NOTE: in order for this script to work, you must install this module with --dev enabled, otherwise Monolog won't be
- * installed because we depend on PSR-3, not Monolog specific, unless you already use it.
+ * NOTE: TgLog accepts any PSR-3 logger, this example uses the simple ConsoleLogger shipped with this package. In your
+ * own code you will probably want to pass the logger you already use (Monolog or any other).
  *
  * You can run this example (or any other in this same folder) as follows:
  * vagrant ssh
@@ -14,22 +14,21 @@ declare(strict_types = 1);
 
 include __DIR__.'/basics.php';
 
-use React\EventLoop\Factory;
-use unreal4u\TelegramAPI\HttpClientRequestHandler;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\HttpFactory;
+use unreal4u\TelegramAPI\PsrHttpClientRequestHandler;
 use unreal4u\TelegramAPI\Telegram\Methods\GetUserProfilePhotos;
 use unreal4u\TelegramAPI\Telegram\Types\UserProfilePhotos;
 use unreal4u\TelegramAPI\TgLog;
 
 $logger = new \unreal4u\TelegramAPI\ConsoleLogger();
 
-$loop = Factory::create();
-$tgLog = new TgLog(BOT_TOKEN, new HttpClientRequestHandler($loop), $logger);
+$httpFactory = new HttpFactory();
+$tgLog = new TgLog(BOT_TOKEN, new PsrHttpClientRequestHandler(new Client(), $httpFactory, $httpFactory), $logger);
 
 $userProfilePhotos = new GetUserProfilePhotos();
 $userProfilePhotos->user_id = A_USER_ID;
 
-$promise = $tgLog->performApiRequest($userProfilePhotos);
-
-$promise->then(function (UserProfilePhotos $photos) {
-    var_dump($photos);
-});
+/** @var UserProfilePhotos $photos */
+$photos = $tgLog->performApiRequest($userProfilePhotos);
+var_dump($photos);

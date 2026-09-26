@@ -37,12 +37,29 @@ class TelegramDocument
         $headers = $response->getHeaders();
 
         // What better to get the mime type than what the Telegram servers already send us?
-        $this->mime_type = !empty($headers['Content-Type']) ? $headers['Content-Type'] : 'application/octet-stream';
+        $this->mime_type = $this->getHeaderLine($headers, 'Content-Type') ?: 'application/octet-stream';
 
         // Same with file length
-        $this->file_size = !empty($headers['Content-Length']) ? $headers['Content-Length']
-            : \strlen($response->getRawData());
+        $this->file_size = (int)$this->getHeaderLine($headers, 'Content-Length') ?: \strlen($response->getRawData());
         $this->contents = $response->getRawData();
+    }
+
+    /**
+     * PSR-7 headers are arrays of values and their names are case-insensitive, flatten the one we want into a string
+     *
+     * @param array $headers
+     * @param string $name
+     * @return string
+     */
+    private function getHeaderLine(array $headers, string $name): string
+    {
+        foreach ($headers as $headerName => $value) {
+            if (strcasecmp((string)$headerName, $name) === 0) {
+                return implode(', ', (array)$value);
+            }
+        }
+
+        return '';
     }
 
     /**

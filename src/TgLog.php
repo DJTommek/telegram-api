@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace unreal4u\TelegramAPI;
 
 use Psr\Log\LoggerInterface;
-use React\Promise\PromiseInterface;
 use unreal4u\TelegramAPI\Abstracts\TelegramMethods;
+use unreal4u\TelegramAPI\Abstracts\TelegramTypes;
+use unreal4u\TelegramAPI\Exceptions\ClientException;
+use unreal4u\TelegramAPI\Exceptions\MissingMandatoryField;
 use unreal4u\TelegramAPI\InternalFunctionality\PostOptionsConstructor;
 use unreal4u\TelegramAPI\InternalFunctionality\TelegramDocument;
 use unreal4u\TelegramAPI\InternalFunctionality\TelegramResponse;
@@ -55,38 +57,38 @@ class TgLog
      *
      * @param TelegramMethods $method
      *
-     * @return PromiseInterface
-     * @throws \unreal4u\TelegramAPI\Exceptions\MissingMandatoryField
+     * @return TelegramTypes The type depends on the method, see TelegramMethods::bindToObject()
+     * @throws MissingMandatoryField
+     * @throws ClientException
      */
-    public function performApiRequest(TelegramMethods $method): PromiseInterface
+    public function performApiRequest(TelegramMethods $method): TelegramTypes
     {
-        $this->logger->debug('Request for async API call, resetting internal values', [\get_class($method)]);
+        $this->logger->debug('Request for API call, resetting internal values', [\get_class($method)]);
         $this->resetObjectValues();
         $option = $this->formConstructor->constructOptions($method);
-        return $this->sendRequestToTelegram($method, $option)
-            ->then(function (TelegramResponse $response) use ($method) {
-                return $method::bindToObject($response, $this->logger);
-            }, function ($error): void {
-                $this->logger->error($error);
-                throw $error;
-            });
+
+        try {
+            $response = $this->sendRequestToTelegram($method, $option);
+        } catch (ClientException $e) {
+            $this->logger->error($e->getMessage(), ['exception' => $e]);
+            throw $e;
+        }
+
+        return $method::bindToObject($response, $this->logger);
     }
 
     /**
      * @param File $file
      *
-     * @return PromiseInterface
+     * @return TelegramDocument
+     * @throws ClientException
      */
-    public function downloadFile(File $file): PromiseInterface
+    public function downloadFile(File $file): TelegramDocument
     {
         $fileUrl = $this->fileUrl($file);
         $this->logger->debug('About to perform request to begin downloading file');
 
-        return $this->requestHandler->get($fileUrl)->then(
-            function (TelegramResponse $rawData) {
-                return new TelegramDocument($rawData);
-            }
-        );
+        return new TelegramDocument($this->requestHandler->get($fileUrl));
     }
 
     /**
@@ -95,11 +97,12 @@ class TgLog
      * @param TelegramMethods $method
      * @param array $formData
      *
-     * @return PromiseInterface
+     * @return TelegramResponse
+     * @throws ClientException
      */
-    protected function sendRequestToTelegram(TelegramMethods $method, array $formData): PromiseInterface
+    protected function sendRequestToTelegram(TelegramMethods $method, array $formData): TelegramResponse
     {
-        $this->logger->debug('About to perform async HTTP call to Telegram\'s API');
+        $this->logger->debug('About to perform HTTP call to Telegram\'s API');
         return $this->requestHandler->post($this->composeApiMethodUrl($method), $formData);
     }
 

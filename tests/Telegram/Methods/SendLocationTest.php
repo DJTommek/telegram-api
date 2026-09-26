@@ -40,26 +40,24 @@ class SendLocationTest extends TestCase
         $sendLocation->latitude = 43.296482;
         $sendLocation->longitude = 5.369763;
 
-        $promise = $this->tgLog->performApiRequest($sendLocation);
+        $result = $this->tgLog->performApiRequest($sendLocation);
 
-        $promise->then(function (Message $result) use ($sendLocation) {
-            $this->assertInstanceOf(Message::class, $result);
+        $this->assertInstanceOf(Message::class, $result);
 
-            $this->assertEquals(13, $result->message_id);
-            $this->assertInstanceOf(User::class, $result->from);
-            $this->assertInstanceOf(Chat::class, $result->chat);
-            $this->assertEquals(123456789, $result->from->id);
-            $this->assertEquals('unreal4uBot', $result->from->username);
-            $this->assertEquals($sendLocation->chat_id, $result->chat->id);
-            $this->assertEquals('unreal4u', $result->chat->username);
+        $this->assertEquals(13, $result->message_id);
+        $this->assertInstanceOf(User::class, $result->from);
+        $this->assertInstanceOf(Chat::class, $result->chat);
+        $this->assertEquals(123456789, $result->from->id);
+        $this->assertEquals('unreal4uBot', $result->from->username);
+        $this->assertEquals($sendLocation->chat_id, $result->chat->id);
+        $this->assertEquals('unreal4u', $result->chat->username);
 
-            $this->assertEquals(1452209867, $result->date);
-            $this->assertNull($result->audio);
+        $this->assertEquals(1452209867, $result->date);
+        $this->assertNull($result->audio);
 
-            $this->assertInstanceOf(Location::class, $result->location);
-            // We have to round because what we send isn't necessarily what we get
-            $this->assertEquals(round($sendLocation->latitude, 6), round($result->location->latitude, 6));
-            $this->assertEquals(round($sendLocation->longitude, 6), round($result->location->longitude, 6));
-        });
+        $this->assertInstanceOf(Location::class, $result->location);
+        // We have to round because what we send isn't necessarily what we get
+        $this->assertEquals(round($sendLocation->latitude, 6), round($result->location->latitude, 6));
+        $this->assertEquals(round($sendLocation->longitude, 6), round($result->location->longitude, 6));
     }
 }

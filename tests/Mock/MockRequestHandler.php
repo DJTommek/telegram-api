@@ -2,30 +2,18 @@
 
 namespace unreal4u\TelegramAPI\tests\Mock;
 
-use React\Promise\Deferred;
-use React\Promise\PromiseInterface;
 use unreal4u\TelegramAPI\InternalFunctionality\TelegramResponse;
 use unreal4u\TelegramAPI\RequestHandlerInterface;
 
 class MockRequestHandler implements RequestHandlerInterface
 {
-    public function post(string $filename, array $formFields): PromiseInterface
+    public function post(string $filename, array $formFields): TelegramResponse
     {
-        $deferred = new Deferred();
-
-        $contents = file_get_contents($filename);
-
-        $deferred->resolve(new TelegramResponse($contents));
-        return $deferred->promise();
+        return new TelegramResponse(file_get_contents($filename));
     }
 
-    public function get(string $filename): PromiseInterface
+    public function get(string $filename): TelegramResponse
     {
-        $deferred = new Deferred();
-
-        $contents = file_get_contents($filename);
-
-        $deferred->resolve(new TelegramResponse($contents));
-        return $deferred->promise();
+        return new TelegramResponse(file_get_contents($filename));
     }
 }

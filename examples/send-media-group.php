@@ -4,15 +4,17 @@ declare(strict_types = 1);
 
 include __DIR__.'/basics.php';
 
-use React\EventLoop\Factory;
-use unreal4u\TelegramAPI\HttpClientRequestHandler;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\HttpFactory;
+use unreal4u\TelegramAPI\Exceptions\ClientException;
+use unreal4u\TelegramAPI\PsrHttpClientRequestHandler;
 use unreal4u\TelegramAPI\Telegram\Methods\SendMediaGroup;
 use unreal4u\TelegramAPI\Telegram\Types\InputMedia\Photo;
 use unreal4u\TelegramAPI\Telegram\Types\InputMedia\Video;
 use unreal4u\TelegramAPI\TgLog;
 
-$loop = Factory::create();
-$tgLog = new TgLog(BOT_TOKEN, new HttpClientRequestHandler($loop));
+$httpFactory = new HttpFactory();
+$tgLog = new TgLog(BOT_TOKEN, new PsrHttpClientRequestHandler(new Client(), $httpFactory, $httpFactory));
 
 $sendMediaGroup = new SendMediaGroup();
 $sendMediaGroup->chat_id = A_USER_CHAT_ID;
@@ -37,22 +39,16 @@ $inputMediaVideo->media = __DIR__ . '/binary-test-data/demo-video.mp4';
 $inputMediaVideo->caption = 'A nice video about... nothing really';
 $sendMediaGroup->media[] = $inputMediaVideo;
 
-$promise = $tgLog->performApiRequest($sendMediaGroup);
-
-$promise->then(
-    static function ($response) {
-        echo '<pre>';
-        $imageCounter = 0;
-        foreach ($response->traverseObject() as $message) {
-            $imageCounter++;
-        }
-        var_dump('Sent ' . $imageCounter . ' images');
-        echo '</pre>';
-    },
-    static function (\Exception $exception) {
-        // Onoes, an exception occurred...
-        echo 'Exception ' . get_class($exception) . ' caught, message: ' . $exception->getMessage() . PHP_EOL;
+try {
+    $response = $tgLog->performApiRequest($sendMediaGroup);
+    echo '<pre>';
+    $imageCounter = 0;
+    foreach ($response->traverseObject() as $message) {
+        $imageCounter++;
     }
-);
-
-$loop->run();
+    var_dump('Sent ' . $imageCounter . ' images');
+    echo '</pre>';
+} catch (ClientException $exception) {
+    // Onoes, an exception occurred...
+    echo 'Exception ' . get_class($exception) . ' caught, message: ' . $exception->getMessage() . PHP_EOL;
+}

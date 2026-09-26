@@ -35,15 +35,13 @@ class GetMeTest extends TestCase
     {
         $getMe = new GetMe();
 
-        $promise = $this->tgLog->performApiRequest($getMe);
+        $result = $this->tgLog->performApiRequest($getMe);
 
-        $promise->then(function (User $result) {
-            $this->assertInstanceOf(User::class, $result);
-            $this->assertNotEmpty($result->first_name);
-            $this->assertNotEmpty($result->username);
+        $this->assertInstanceOf(User::class, $result);
+        $this->assertNotEmpty($result->first_name);
+        $this->assertNotEmpty($result->username);
 
-            $this->assertStringEndsWith('Bot', $result->username);
-        });
+        $this->assertStringEndsWith('Bot', $result->username);
     }
 
     public function testGetMeInvalidBotToken()
