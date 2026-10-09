@@ -184,8 +184,66 @@ class PsrHttpClientRequestHandlerTest extends TestCase
             $this->tgLog->performApiRequest($sendMessage);
             $this->fail('A ClientException should have been thrown');
         } catch (ClientException $e) {
-            $this->assertInstanceOf(ConnectException::class, $e->getPrevious());
+            $this->assertNull($e->getPrevious());
             $this->assertSame('Could not resolve host', $e->getMessage());
+            $this->assertSame('Could not resolve host', $e->getError()->description);
+        }
+    }
+
+    public function testTransportErrorDoesNotLeakBotToken()
+    {
+        $botToken = '123456789:AAbbCCddEEffGGhhIIjjKKllMMnnOOppQQr';
+        $httpFactory = new HttpFactory();
+        $tgLog = new TgLog($botToken, new PsrHttpClientRequestHandler(
+            new Client(['handler' => HandlerStack::create($this->mockHandler)]),
+            $httpFactory,
+            $httpFactory
+        ));
+
+        $this->mockHandler->append(function (RequestInterface $request) {
+            throw new ConnectException(
+                'cURL error 28: Operation timed out after 5001 milliseconds with 0 bytes received for '
+                . $request->getUri(),
+                $request
+            );
+        });
+
+        $sendMessage = new SendMessage();
+        $sendMessage->chat_id = 12341234;
+        $sendMessage->text = 'Hello world';
+
+        try {
+            $tgLog->performApiRequest($sendMessage);
+            $this->fail('A ClientException should have been thrown');
+        } catch (ClientException $e) {
+            $this->assertSame(
+                'cURL error 28: Operation timed out after 5001 milliseconds with 0 bytes received for '
+                . 'https://api.telegram.org/bot<redacted>/SendMessage',
+                $e->getMessage()
+            );
+            $this->assertNull($e->getPrevious());
+            $this->assertStringNotContainsString($botToken, (string)$e);
+        }
+    }
+
+    public function testTransportErrorDoesNotLeakQueryParametersNorUserInfo()
+    {
+        $httpFactory = new HttpFactory();
+        $requestHandler = new PsrHttpClientRequestHandler(
+            new Client(['handler' => HandlerStack::create($this->mockHandler)]),
+            $httpFactory,
+            $httpFactory
+        );
+
+        $this->mockHandler->append(function (RequestInterface $request) {
+            throw new ConnectException('Connection refused for ' . $request->getUri(), $request);
+        });
+
+        try {
+            $requestHandler->get('https://user:pass@api.telegram.org/bot123:ABC-def_g/getMe?secret=value#fragment');
+            $this->fail('A ClientException should have been thrown');
+        } catch (ClientException $e) {
+            $this->assertSame('Connection refused for https://api.telegram.org/bot<redacted>/getMe', $e->getMessage());
         }
     }
 

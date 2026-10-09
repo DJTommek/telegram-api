@@ -9,6 +9,7 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
+use Psr\Http\Message\UriInterface;
 use unreal4u\TelegramAPI\Exceptions\ClientException;
 use unreal4u\TelegramAPI\InternalFunctionality\TelegramResponse;
 use unreal4u\TelegramAPI\Telegram\Types\Custom\UnsuccessfulRequest;
@@ -38,7 +39,7 @@ class PsrHttpClientRequestHandler implements RequestHandlerInterface
      * @return TelegramResponse
      * @throws ClientException
      */
-    public function get(string $uri): TelegramResponse
+    public function get(#[\SensitiveParameter] string $uri): TelegramResponse
     {
         return $this->sendRequest($this->requestFactory->createRequest('GET', $uri));
     }
@@ -52,7 +53,7 @@ class PsrHttpClientRequestHandler implements RequestHandlerInterface
      * @return TelegramResponse
      * @throws ClientException
      */
-    public function post(string $uri, array $formFields): TelegramResponse
+    public function post(#[\SensitiveParameter] string $uri, array $formFields): TelegramResponse
     {
         $request = $this->requestFactory->createRequest('POST', $uri);
 
@@ -75,12 +76,19 @@ class PsrHttpClientRequestHandler implements RequestHandlerInterface
      * @return TelegramResponse
      * @throws ClientException
      */
-    protected function sendRequest(RequestInterface $request): TelegramResponse
+    protected function sendRequest(#[\SensitiveParameter] RequestInterface $request): TelegramResponse
     {
         try {
             $response = $this->client->sendRequest($request);
         } catch (ClientExceptionInterface $e) {
-            throw new ClientException($e->getMessage(), (int)$e->getCode(), $e);
+            // The original exception is deliberately not chained: its message and the request it may carry contain
+            // the full URI, which includes the bot token (and error handlers like Tracy log the whole chain)
+            $exception = new ClientException();
+            $exception->setError(new UnsuccessfulRequest([
+                'description' => $this->redactSensitiveData($e->getMessage(), $request->getUri()),
+                'error_code' => (int)$e->getCode(),
+            ]));
+            throw $exception;
         }
 
         // Telegram describes failed API calls in a JSON body with "ok": false, TelegramResponse throws on those
@@ -97,5 +105,28 @@ class PsrHttpClientRequestHandler implements RequestHandlerInterface
         }
 
         return $telegramResponse;
+    }
+
+    /**
+     * Removes the bot token, query parameters and user info of the given URI from the given text
+     *
+     * @param string $text
+     * @param UriInterface $uri
+     *
+     * @return string
+     */
+    protected function redactSensitiveData(string $text, #[\SensitiveParameter] UriInterface $uri): string
+    {
+        $redactedToken = '<redacted>';
+        $safeUri = (string)$uri->withUserInfo('')->withQuery('')->withFragment('');
+        $safeUri = preg_replace('~/bot[^/]*~', '/bot' . $redactedToken, $safeUri);
+        $text = str_replace((string)$uri, $safeUri, $text);
+
+        // Fallback for clients which format the URI differently in their messages
+        if (preg_match('~/bot([^/]+)~', $uri->getPath(), $matches) === 1) {
+            $text = str_replace([$matches[1], rawurldecode($matches[1])], $redactedToken, $text);
+        }
+
+        return $text;
     }
 }

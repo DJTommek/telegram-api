@@ -40,7 +40,7 @@ class TgLog
      * TelegramLog constructor.
      */
     public function __construct(
-        private string $botToken,
+        #[\SensitiveParameter] private string $botToken,
         RequestHandlerInterface $handler,
         private ?LoggerInterface $logger = null,
     )
